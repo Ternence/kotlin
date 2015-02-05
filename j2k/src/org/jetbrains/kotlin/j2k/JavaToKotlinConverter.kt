@@ -27,6 +27,10 @@ import com.intellij.openapi.diagnostic.Logger
 import java.util.ArrayList
 import org.jetbrains.kotlin.j2k.usageProcessing.UsageProcessing
 import java.util.HashMap
+import com.intellij.openapi.components.ServiceManager
+import org.jetbrains.kotlin.psi.JetElement
+import com.intellij.psi.PsiMember
+import org.jetbrains.kotlin.psi.JetNamedDeclaration
 
 public trait ConversionScope {
     public fun contains(element: PsiElement): Boolean
@@ -40,6 +44,17 @@ public trait PostProcessor {
     public val contextToAnalyzeIn: PsiElement
     public fun analyzeFile(file: JetFile): BindingContext
     public fun doAdditionalProcessing(file: JetFile)
+}
+
+public trait JavaToKotlinConversionService {
+    public fun canConvert(elementToConvert: PsiMember): Boolean
+    public fun convert(elementToConvert: PsiMember, contextToAnalyzeIn: PsiElement): JetNamedDeclaration
+
+    class object {
+        public fun getInstance(project: Project): JavaToKotlinConversionService {
+            return ServiceManager.getService(project, javaClass<JavaToKotlinConversionService>())
+        }
+    }
 }
 
 public class JavaToKotlinConverter(private val project: Project,

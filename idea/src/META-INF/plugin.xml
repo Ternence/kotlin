@@ -204,6 +204,9 @@
     <projectService serviceInterface="org.jetbrains.kotlin.resolve.jvm.KotlinJavaPsiFacade"
                     serviceImplementation="org.jetbrains.kotlin.resolve.jvm.KotlinJavaPsiFacade"/>
 
+    <projectService serviceInterface="org.jetbrains.kotlin.j2k.JavaToKotlinConversionService"
+                    serviceImplementation="org.jetbrains.kotlin.idea.j2k.IdeaJavaToKotlinConverterFactory"/>
+
     <errorHandler implementation="org.jetbrains.kotlin.idea.reporter.KotlinReportSubmitter"/>
 
     <internalFileTemplate name="Kotlin File"/>
