@@ -251,7 +251,7 @@ public class JetCoreEnvironment {
         this.configuration = configuration.copy();
         this.configuration.setReadOnly(true);
 
-        projectEnvironment = new JavaCoreProjectEnvironment(parentDisposable, applicationEnvironment){
+        projectEnvironment = new KotlinCoreProjectEnvironment(parentDisposable, applicationEnvironment){
             @Override
             protected void preregisterServices() {
                 registerProjectExtensionPoints(Extensions.getArea(getProject()));
