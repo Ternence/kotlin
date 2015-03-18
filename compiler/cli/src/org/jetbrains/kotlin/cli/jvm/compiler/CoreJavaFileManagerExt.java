@@ -30,13 +30,17 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class CoreJavaFileManagerExt extends CoreJavaFileManager implements JavaFileManager {
     private static final Logger LOG = Logger.getInstance("#com.intellij.core.CoreJavaFileManager");
+    public static final Pattern DOT_PATTERN = Pattern.compile("\\.");
 
     private final List<VirtualFile> myClasspath = new ArrayList<VirtualFile>();
 
     private final PsiManager myPsiManager;
+
+    private final PackagesCache myPackagesCache = new PackagesCache(myClasspath);
 
     public CoreJavaFileManagerExt(PsiManager psiManager) {
         super(psiManager);
@@ -49,7 +53,7 @@ public class CoreJavaFileManagerExt extends CoreJavaFileManager implements JavaF
 
     @Override
     public PsiPackage findPackage(@NotNull String packageName) {
-        final List<VirtualFile> files = findDirectoriesByPackageName(packageName);
+        List<VirtualFile> files = findDirectoriesByPackageName(packageName);
         if (!files.isEmpty()) {
             return new PsiPackageImpl(myPsiManager, packageName);
         }
@@ -83,13 +87,10 @@ public class CoreJavaFileManagerExt extends CoreJavaFileManager implements JavaF
 
     @Override
     public PsiClass findClass(@NotNull String qName, @NotNull GlobalSearchScope scope) {
-        for (VirtualFile root : roots()) {
+        String[] splitString = DOT_PATTERN.split(qName);
+
+        myPackagesCache.searchPackages()
             final PsiClass psiClass = findClassInClasspathRoot(qName, root, myPsiManager, scope);
-            if (psiClass != null) {
-                return psiClass;
-            }
-        }
-        return null;
     }
 
     @Nullable
