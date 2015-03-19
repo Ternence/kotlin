@@ -107,15 +107,14 @@ public val <T> Class<T>.kotlin: KClass<T>
     get() = KClassImpl(this)
 
 // TODO: getstatic $kotlinPackage
-// TODO: make nullable or throw exception
 /**
  * Returns a [KPackage] instance corresponding to the Java [Class] instance.
  * The given class is generated from top level functions and properties in the Kotlin package.
  * See the [Kotlin language documentation](http://kotlinlang.org/docs/reference/java-interop.html#package-level-functions)
  * for more information.
  */
-public val Class<*>.kotlinPackage: KPackage
-    get() = KPackageImpl(this)
+public val Class<*>.kotlinPackage: KPackage?
+    get() = if (getAnnotation(javaClass<kotlin.jvm.internal.KotlinPackage>()) != null) KPackageImpl(this) else null
 
 
 /**
@@ -133,7 +132,11 @@ public val Field.kotlin: KProperty<*>?
         val static = Modifier.isStatic(modifiers)
         val final = Modifier.isFinal(modifiers)
         if (static) {
-            val kPackage = clazz.kotlinPackage
+            // This error can happen in edge cases like properties of a companion object which are moved to the outer class
+            val kPackage = clazz.kotlinPackage ?: throw KotlinReflectionInternalError(
+                    "Can't map this field to a property. Most probably it means that this kind of fields " +
+                    "is not yet supported in Kotlin reflection. Field: $this"
+            )
             return if (final) Reflection.topLevelVariable(name, kPackage) else Reflection.mutableTopLevelVariable(name, kPackage)
         }
         else {
