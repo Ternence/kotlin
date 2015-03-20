@@ -33,9 +33,9 @@ public abstract class AndroidResourceManager(val project: Project) {
 
     public open fun idToXmlAttribute(id: String): PsiElement? = null
 
-    open fun getLayoutXmlFiles(): List<PsiFile> {
+    public fun getLayoutXmlFiles(): Map<String, List<PsiFile>> {
         val info = androidModuleInfo
-        if (info == null) return listOf()
+        if (info == null) return sortedMapOf()
 
         val psiManager = PsiManager.getInstance(project)
         val fileManager = VirtualFileManager.getInstance()
@@ -61,7 +61,8 @@ public abstract class AndroidResourceManager(val project: Project) {
                 .filter { it.getParent().getName().startsWith("layout") && it.getName().toLowerCase().endsWith(".xml") }
                 .map { psiManager.findFile(it) }
                 .filterNotNull()
-                .sortBy { it.getName() }
+                .groupBy { it.getName().substringBeforeLast('.') }
+                .mapValues { it.getValue().sortBy { it.getParent().getName().length() } }
     }
 
     fun getMainResDirectory(): VirtualFile? {
@@ -70,7 +71,7 @@ public abstract class AndroidResourceManager(val project: Project) {
         return VirtualFileManager.getInstance().findFileByUrl("file://" + info.mainResDirectory)
     }
 
-    class object {
+    companion object {
         public fun getInstance(module: Module): AndroidResourceManager {
             val service = ModuleServiceManager.getService<AndroidResourceManager>(module, javaClass<AndroidResourceManager>())
             return service ?: module.getComponent<AndroidResourceManager>(javaClass<AndroidResourceManager>())
