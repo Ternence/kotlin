@@ -251,7 +251,8 @@ public class JetCoreEnvironment {
         this.configuration = configuration.copy();
         this.configuration.setReadOnly(true);
 
-        projectEnvironment = new KotlinCoreProjectEnvironment(parentDisposable, applicationEnvironment){
+        PackagesCache packagesCache = new PackagesCache(classPath.roots);
+        projectEnvironment = new KotlinCoreProjectEnvironment(packagesCache, parentDisposable, applicationEnvironment){
             @Override
             protected void preregisterServices() {
                 registerProjectExtensionPoints(Extensions.getArea(getProject()));
@@ -297,7 +298,9 @@ public class JetCoreEnvironment {
                 configuration.getList(CommonConfigurationKeys.SCRIPT_DEFINITIONS_KEY)
         );
 
-        project.registerService(VirtualFileFinderFactory.class, new CliVirtualFileFinderFactory(classPath));
+        JavaFileManager service = ServiceManager.getService(project, JavaFileManager.class);
+        ((CoreJavaFileManagerExt) service).setPackagesCache(packagesCache);
+        project.registerService(VirtualFileFinderFactory.class, new CliVirtualFileFinderFactory(packagesCache));
 
         ExternalDeclarationsProvider.OBJECT$.registerExtensionPoint(project);
         ExpressionCodegenExtension.OBJECT$.registerExtensionPoint(project);

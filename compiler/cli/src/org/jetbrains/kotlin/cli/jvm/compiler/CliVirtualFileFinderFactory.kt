@@ -16,16 +16,12 @@
 
 package org.jetbrains.kotlin.cli.jvm.compiler
 
-import com.intellij.core.JavaCoreApplicationEnvironment
-import com.intellij.core.JavaCoreProjectEnvironment
-import com.intellij.openapi.Disposable
-import com.intellij.psi.PsiManager
+import com.intellij.psi.search.GlobalSearchScope
+import org.jetbrains.kotlin.load.kotlin.VirtualFileFinder
+import org.jetbrains.kotlin.load.kotlin.VirtualFileFinderFactory
 
-open class KotlinCoreProjectEnvironment(
-        private val packagesCache: PackagesCache,
-        disposable: Disposable,
-        applicationEnvironment: JavaCoreApplicationEnvironment
-)
-: JavaCoreProjectEnvironment(disposable, applicationEnvironment) {
-    override fun createCoreFileManager() = CoreJavaFileManagerExt(packagesCache, PsiManager.getInstance(getProject()))
+public class CliVirtualFileFinderFactory(private val packagesCache: PackagesCache) : VirtualFileFinderFactory {
+    override fun create(scope: GlobalSearchScope): VirtualFileFinder {
+        return CliVirtualFileFinder(packagesCache)
+    }
 }

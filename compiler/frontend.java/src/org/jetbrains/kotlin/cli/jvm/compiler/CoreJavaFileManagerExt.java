@@ -26,116 +26,82 @@ import com.intellij.psi.*;
 import com.intellij.psi.impl.file.PsiPackageImpl;
 import com.intellij.psi.impl.file.impl.JavaFileManager;
 import com.intellij.psi.search.GlobalSearchScope;
+import jet.runtime.typeinfo.JetValueParameter;
+import kotlin.Function1;
+import kotlin.KotlinPackage;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.jetbrains.kotlin.name.ClassId;
+import org.jetbrains.kotlin.name.Name;
 
 import java.util.*;
 import java.util.regex.Pattern;
 
 public class CoreJavaFileManagerExt extends CoreJavaFileManager implements JavaFileManager {
     private static final Logger LOG = Logger.getInstance("#com.intellij.core.CoreJavaFileManager");
-    public static final Pattern DOT_PATTERN = Pattern.compile("\\.");
 
     private final List<VirtualFile> myClasspath = new ArrayList<VirtualFile>();
 
+    private PackagesCache packagesCache;
     private final PsiManager myPsiManager;
 
-    private final PackagesCache myPackagesCache = new PackagesCache(myClasspath);
-
-    public CoreJavaFileManagerExt(PsiManager psiManager) {
+    public CoreJavaFileManagerExt(PackagesCache packagesCache, PsiManager psiManager) {
         super(psiManager);
+        this.packagesCache = packagesCache;
         myPsiManager = psiManager;
     }
 
-    private List<VirtualFile> roots() {
-        return myClasspath;
-    }
-
-    @Override
-    public PsiPackage findPackage(@NotNull String packageName) {
-        List<VirtualFile> files = findDirectoriesByPackageName(packageName);
-        if (!files.isEmpty()) {
-            return new PsiPackageImpl(myPsiManager, packageName);
-        }
-        return null;
-    }
-
-    private List<VirtualFile> findDirectoriesByPackageName(String packageName) {
-        List<VirtualFile> result = new ArrayList<VirtualFile>();
-        String dirName = packageName.replace(".", "/");
-        for (VirtualFile root : roots()) {
-            VirtualFile classDir = root.findFileByRelativePath(dirName);
-            if (classDir != null) {
-                result.add(classDir);
-            }
-        }
-        return result;
+    public void setPackagesCache(PackagesCache packagesCache) {
+        this.packagesCache = packagesCache;
     }
 
     @Nullable
-    public PsiPackage getPackage(PsiDirectory dir) {
-        final VirtualFile file = dir.getVirtualFile();
-        for (VirtualFile root : myClasspath) {
-            if (VfsUtilCore.isAncestor(root, file, false)) {
-                String relativePath = FileUtil.getRelativePath(root.getPath(), file.getPath(), '/');
-                if (relativePath == null) continue;
-                return new PsiPackageImpl(myPsiManager, relativePath.replace('/', '.'));
+    public PsiClass findClass(@NotNull ClassId classId, @NotNull final GlobalSearchScope scope) {
+        List<Name> packageNameSegments = classId.getPackageFqName().pathSegments();
+
+        final String classNameWithInnerClasses = classId.getRelativeClassName().asString();
+        List<String> NAME_IT = KotlinPackage.map(packageNameSegments, new Function1<Name, String>() {
+            @Override
+            public String invoke(Name name) {
+                return name.getIdentifier();
             }
-        }
-        return null;
-    }
-
-    @Override
-    public PsiClass findClass(@NotNull String qName, @NotNull GlobalSearchScope scope) {
-        String[] splitString = DOT_PATTERN.split(qName);
-
-        myPackagesCache.searchPackages()
-            final PsiClass psiClass = findClassInClasspathRoot(qName, root, myPsiManager, scope);
+        });
+        return packagesCache.searchPackages(NAME_IT, new Function1<VirtualFile, PsiClass>() {
+            @Override
+            public PsiClass invoke(VirtualFile dir) {
+                return findClassGivenPackage(scope, dir, classNameWithInnerClasses);
+            }
+        });
     }
 
     @Nullable
-    public static PsiClass findClassInClasspathRoot(@NotNull String qName,
-            @NotNull VirtualFile root,
-            @NotNull PsiManager psiManager,
-            @NotNull GlobalSearchScope scope) {
-        String pathRest = qName;
-        VirtualFile cur = root;
-
-        while (true) {
-            int dot = pathRest.indexOf('.');
-            if (dot < 0) break;
-
-            String pathComponent = pathRest.substring(0, dot);
-            VirtualFile child = cur.findChild(pathComponent);
-
-            if (child == null) break;
-            pathRest = pathRest.substring(dot + 1);
-            cur = child;
-        }
-
-        String classNameWithInnerClasses = pathRest;
+    private PsiClass findClassGivenPackage(
+            @NotNull GlobalSearchScope scope,
+            @NotNull VirtualFile packageDir,
+            @NotNull String classNameWithInnerClasses
+    ) {
         String topLevelClassName = substringBeforeFirstDot(classNameWithInnerClasses);
 
-        VirtualFile vFile = cur.findChild(topLevelClassName + ".class");
-        if (vFile == null) vFile = cur.findChild(topLevelClassName + ".java");
+        VirtualFile vFile = packageDir.findChild(topLevelClassName + ".class");
+        if (vFile == null) vFile = packageDir.findChild(topLevelClassName + ".java");
 
         if (vFile == null) {
             return null;
         }
         if (!vFile.isValid()) {
-            LOG.error("Invalid child of valid parent: " + vFile.getPath() + "; " + root.isValid() + " path=" + root.getPath());
+            LOG.error("Invalid child of valid parent: " + vFile.getPath() + "; " + packageDir.isValid() + " path=" + packageDir.getPath());
             return null;
         }
         if (!scope.contains(vFile)) {
             return null;
         }
 
-        final PsiFile file = psiManager.findFile(vFile);
+        PsiFile file = myPsiManager.findFile(vFile);
         if (!(file instanceof PsiClassOwner)) {
             return null;
         }
 
-        return findClassInPsiFile(classNameWithInnerClasses, (PsiClassOwner)file);
+        return findClassInPsiFile(classNameWithInnerClasses, (PsiClassOwner) file);
     }
 
     @NotNull
@@ -182,26 +148,10 @@ public class CoreJavaFileManagerExt extends CoreJavaFileManager implements JavaF
         return curClass;
     }
 
-    @NotNull
-    @Override
-    public PsiClass[] findClasses(@NotNull String qName, @NotNull GlobalSearchScope scope) {
-        List<PsiClass> result = new ArrayList<PsiClass>();
-        for (VirtualFile file : roots()) {
-            final PsiClass psiClass = findClassInClasspathRoot(qName, file, myPsiManager, scope);
-            if (psiClass != null) {
-                result.add(psiClass);
-            }
-        }
-        return result.toArray(new PsiClass[result.size()]);
-    }
 
-    @NotNull
     @Override
-    public Collection<String> getNonTrivialPackagePrefixes() {
-        return Collections.emptyList();
-    }
-
     public void addToClasspath(VirtualFile root) {
+        super.addToClasspath(root);
         myClasspath.add(root);
     }
 }

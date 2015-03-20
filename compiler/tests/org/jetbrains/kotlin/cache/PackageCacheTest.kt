@@ -23,6 +23,9 @@ import com.intellij.testFramework.PsiTestCase
 import com.intellij.testFramework.PsiTestUtil
 import junit.framework.TestCase
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.cli.jvm.compiler.CoreJavaFileManagerExt
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 
 
 public class CoreJavaFileManagerTest : PsiTestCase() {
@@ -31,13 +34,14 @@ public class CoreJavaFileManagerTest : PsiTestCase() {
     public fun testCommon() {
         val manager = configureManager("package foo;\n\n" + "public class TopLevel {\n" + "public class Inner {\n" + "   public class Inner {}\n" + "}\n" + "\n" + "}", "TopLevel")
 
-        assertCanFind(manager, "foo.TopLevel")
-        assertCanFind(manager, "foo.TopLevel.Inner")
-        assertCanFind(manager, "foo.TopLevel.Inner.Inner")
-
-        assertCannotFind(manager, "foo.TopLevel\$Inner.Inner")
-        assertCannotFind(manager, "foo.TopLevel.Inner\$Inner")
-        assertCannotFind(manager, "foo.TopLevel.Inner.Inner.Inner")
+        assertCanFind(manager, "foo/TopLevel")
+        assertCanFind(manager, "org/jetbrains/TopLevel")
+//        assertCanFind(manager, "foo/TopLevel.Inner")
+//        assertCanFind(manager, "foo/TopLevel.Inner.Inner")
+//
+//        assertCannotFind(manager, "foo/TopLevel\$Inner.Inner")
+//        assertCannotFind(manager, "foo/TopLevel.Inner\$Inner")
+//        assertCannotFind(manager, "foo/TopLevel.Inner.Inner.Inner")
     }
 
     throws(javaClass<Exception>())
@@ -142,21 +146,24 @@ public class CoreJavaFileManagerTest : PsiTestCase() {
     }
 
     throws(javaClass<Exception>())
-    private fun configureManager(Language("JAVA") text: String, className: String): CoreJavaFileManager {
+    private fun configureManager(Language("JAVA") text: String, className: String): CoreJavaFileManagerExt {
         val root = PsiTestUtil.createTestProjectStructure(myProject, myModule, PlatformTestCase.myFilesToDelete)
-        val pkg = root.createChildDirectory(this, "foo")
-        val dir = myPsiManager.findDirectory(pkg)
-        TestCase.assertNotNull(dir)
-        dir.add(PsiFileFactory.getInstance(getProject()).createFileFromText(className + ".java", JavaFileType.INSTANCE, text))
-        val manager = CoreJavaFileManager(myPsiManager)
-        manager.addToClasspath(root)
-        return manager
+//        val root2 = PsiTestUtil.createTestProjectStructure(myProject, myModule, PlatformTestCase.myFilesToDelete)
+        val pkg1 = root.createChildDirectory(this, "foo")
+        val pkg2 = root.createChildDirectory(this, "org").createChildDirectory(this, "jetbrains")
+        for (pkg in listOf(pkg1, pkg2)) {
+            val dir = myPsiManager.findDirectory(pkg)
+            TestCase.assertNotNull(dir)
+            dir.add(PsiFileFactory.getInstance(getProject()).createFileFromText(className + ".java", JavaFileType.INSTANCE, text))
+        }
+        //TODO:
+        throw UnsupportedOperationException()
     }
 
-    private fun assertCanFind(manager: CoreJavaFileManager, qName: String) {
-        val foundClass = manager.findClass(qName, GlobalSearchScope.allScope(getProject()))
+    private fun assertCanFind(manager: CoreJavaFileManagerExt, qName: String) {
+        val foundClass = manager.findClass(ClassId.fromString(qName), GlobalSearchScope.allScope(getProject()))
         TestCase.assertNotNull("Could not find:" + qName, foundClass)
-        TestCase.assertEquals("Found " + foundClass.getQualifiedName() + " instead of " + qName, qName, foundClass.getQualifiedName())
+//        TestCase.assertEquals("Found " + foundClass.getQualifiedName() + " instead of " + qName, qName, foundClass.getQualifiedName())
     }
 
     private fun assertCannotFind(manager: CoreJavaFileManager, qName: String) {

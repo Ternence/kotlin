@@ -34,7 +34,7 @@ class PackagesCache(private val classpath: List<VirtualFile>) {
         }
     }
 
-    inline fun <T : Any> searchPackages(packagesPath: Array<String>, handler: (VirtualFile) -> T?): T? {
+    fun <T : Any> searchPackages(packagesPath: List<String>, handler: (VirtualFile) -> T?): T? {
         if (packagesPath.isEmpty()) {
             classpath.forEach { file ->
                 val result = handler(file)
@@ -45,7 +45,7 @@ class PackagesCache(private val classpath: List<VirtualFile>) {
         val caches = cachesPath(packagesPath)
 
         var lastMaxIndex = -1
-        for (cacheIndex in (caches.size() - 1)..0) {
+        for (cacheIndex in (caches.size() - 1) downTo 0) {
             val cache = caches[cacheIndex]
             for (classpathIndex in cache.classpathIndices) {
                 if (classpathIndex <= lastMaxIndex) continue
@@ -56,7 +56,7 @@ class PackagesCache(private val classpath: List<VirtualFile>) {
                     return result
                 }
             }
-            lastMaxIndex = cache.classpathIndices.last()
+            lastMaxIndex = cache.classpathIndices.lastOrNull() ?: lastMaxIndex
         }
         return null
     }
@@ -65,15 +65,16 @@ class PackagesCache(private val classpath: List<VirtualFile>) {
      * root -> "org" -> "jet" -> "language"
      * [org, jet, language]
      */
-    private fun travelPath(classPathEntryIndex: Int, packagesPath: Array<String>, fillCachesAfter: Int, cachesPath: List<Cache>): VirtualFile? {
+    private fun travelPath(classPathEntryIndex: Int, packagesPath: List<String>, fillCachesAfter: Int, cachesPath: List<Cache>): VirtualFile? {
         if (oob(classPathEntryIndex)) {
             for (i in (fillCachesAfter + 1)..cachesPath.size() - 1) {
                 cachesPath[i].classpathIndices.add(maxIndex)
             }
+            return null
         }
 
         var currentFile = classpath[classPathEntryIndex]
-        for (pathIndex in 0..packagesPath.size()) {
+        for (pathIndex in packagesPath.indices) {
             currentFile = currentFile.findChild(packagesPath[pathIndex]) ?: return null
             val correspondingCacheIndex = pathIndex + 1
             if (correspondingCacheIndex > fillCachesAfter) {
@@ -83,7 +84,7 @@ class PackagesCache(private val classpath: List<VirtualFile>) {
         return currentFile
     }
 
-    private fun cachesPath(path: Array<String>): ArrayList<Cache> {
+    private fun cachesPath(path: List<String>): ArrayList<Cache> {
         val caches = ArrayList<Cache>()
         caches.add(rootCache)
         var currentCache = rootCache
