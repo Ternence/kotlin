@@ -57,7 +57,7 @@ public class AndroidRenameProcessor : RenamePsiElementProcessor() {
             val outerClass = element.getParent()?.getParent()
             if (outerClass !is PsiClass) return false
 
-            if (outerClass.getQualifiedName()?.startsWith(AndroidConst.SYNTHETIC_PACKAGE + ".") ?: false)
+            if (outerClass.getQualifiedName()?.startsWith(AndroidConst.SYNTHETIC_PACKAGE) ?: false)
                 true else false
         }
         else false
