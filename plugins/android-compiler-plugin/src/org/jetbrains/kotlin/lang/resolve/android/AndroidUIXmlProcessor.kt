@@ -155,7 +155,7 @@ public abstract class AndroidUIXmlProcessor(protected val project: Project) {
         for (widget in widgets) {
             if (widgetMap.contains(widget.id)) {
                 val existingElement = widgetMap.get(widget.id)
-                if (existingElement.className != widget.className) {
+                if (existingElement.className != widget.className && existingElement.className != "View") {
                     // Widgets with the same id but different types exist.
                     widgetMap.put(widget.id, widget.copy(className = "View"))
                 }
