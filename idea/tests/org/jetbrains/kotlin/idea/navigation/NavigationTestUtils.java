@@ -24,12 +24,17 @@ import com.intellij.codeInsight.navigation.GotoTargetHandler;
 import com.intellij.openapi.editor.Document;
 import com.intellij.openapi.editor.Editor;
 import com.intellij.openapi.editor.EditorFactory;
+import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
+import com.intellij.openapi.roots.ContentEntry;
+import com.intellij.openapi.roots.ModifiableRootModel;
 import com.intellij.openapi.util.Pair;
 import com.intellij.psi.PsiDocumentManager;
 import com.intellij.psi.PsiElement;
 import com.intellij.psi.PsiFile;
+import com.intellij.testFramework.LightProjectDescriptor;
 import com.intellij.testFramework.UsefulTestCase;
+import com.intellij.util.Consumer;
 import com.intellij.util.containers.MultiMap;
 import junit.framework.TestCase;
 import org.jetbrains.annotations.NotNull;
@@ -39,6 +44,8 @@ import org.jetbrains.kotlin.test.ReferenceUtils;
 import org.junit.Assert;
 
 import java.util.*;
+
+import static com.intellij.openapi.roots.ModuleRootModificationUtil.updateModel;
 
 public final class NavigationTestUtils {
     private NavigationTestUtils() {
@@ -125,5 +132,19 @@ public final class NavigationTestUtils {
             result.append(filePart).append("\n");
         }
         return result.toString();
+    }
+
+    public static void configureModule(@NotNull final Module module, @NotNull final LightProjectDescriptor descriptor) {
+        updateModel(module, new Consumer<ModifiableRootModel>() {
+            @Override
+            public void consume(ModifiableRootModel model) {
+                if (descriptor.getSdk() != null) {
+                    model.setSdk(descriptor.getSdk());
+                }
+                ContentEntry[] entries = model.getContentEntries();
+                ContentEntry entry = entries.length > 0 ? entries[0] : null;
+                descriptor.configureModule(module, model, entry);
+            }
+        });
     }
 }
