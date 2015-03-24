@@ -77,6 +77,11 @@ public class MemoryBasedClassLoader extends ClassLoader {
         Object resources = preloadedResources.get(internalName);
         if (resources == null) return null;
 
+        // Clear the resource, we won't need it anymore
+        if (!name.equals("org.jetbrains.kotlin.utils.PathUtil")) {
+            preloadedResources.remove(internalName);
+        }
+
         ResourceData resourceData = resources instanceof ResourceData
                                     ? ((ResourceData) resources)
                                     : ((List<ResourceData>) resources).get(0);
