@@ -143,9 +143,9 @@ public class QuickFixFactoryForTypeMismatchError extends JetIntentionActionsFact
 
         // Mismatch in returned expression:
 
-        JetCallableDeclaration function = expressionParent instanceof JetReturnExpression
-                               ? BindingContextUtilPackage.getTargetFunction((JetReturnExpression) expressionParent, context)
-                               : PsiTreeUtil.getParentOfType(expression, JetFunction.class, true);
+        JetDeclaration function = expressionParent instanceof JetReturnExpression
+                                  ? BindingContextUtilPackage.getTargetDeclaration((JetReturnExpression) expressionParent, context)
+                                  : PsiTreeUtil.getParentOfType(expression, JetFunction.class, true);
         if (function instanceof JetFunction && QuickFixUtil.canFunctionOrGetterReturnExpression(function, expression)) {
             JetScope scope = JetScopeUtils.getResolutionScope(function, analysisResult);
             JetType typeToInsert = approximateWithResolvableType(expressionType, scope);

@@ -40,6 +40,7 @@ import org.jetbrains.kotlin.name.Name;
 import org.jetbrains.kotlin.psi.*;
 import org.jetbrains.kotlin.psi.psiUtil.PsiUtilPackage;
 import org.jetbrains.kotlin.resolve.*;
+import org.jetbrains.kotlin.resolve.bindingContextUtil.BindingContextUtilPackage;
 import org.jetbrains.kotlin.resolve.calls.model.*;
 import org.jetbrains.kotlin.resolve.constants.CompileTimeConstant;
 import org.jetbrains.kotlin.resolve.scopes.receivers.ExpressionReceiver;
@@ -1004,24 +1005,8 @@ public class JetControlFlowProcessor {
             if (returnedExpression != null) {
                 generateInstructions(returnedExpression);
             }
-            JetSimpleNameExpression labelElement = expression.getTargetLabel();
-            JetElement subroutine;
-            String labelName = expression.getLabelName();
-            if (labelElement != null && labelName != null) {
-                PsiElement labeledElement = trace.get(BindingContext.LABEL_TARGET, labelElement);
-                if (labeledElement != null) {
-                    assert labeledElement instanceof JetElement;
-                    subroutine = (JetElement) labeledElement;
-                }
-                else {
-                    subroutine = null;
-                }
-            }
-            else {
-                subroutine = builder.getReturnSubroutine();
-                // TODO : a context check
-            }
 
+            JetElement subroutine = BindingContextUtilPackage.getTargetDeclaration(expression, trace.getBindingContext());
             if (subroutine instanceof JetFunction || subroutine instanceof JetPropertyAccessor) {
                 PseudoValue returnValue = returnedExpression != null ? builder.getBoundValue(returnedExpression) : null;
                 if (returnValue == null) {

@@ -54,13 +54,13 @@ public class JetControlFlowInstructionsGenerator extends JetControlFlowBuilderAd
         return builder;
     }
 
-    private void pushBuilder(JetElement scopingElement, JetElement subroutine) {
-        JetControlFlowInstructionsGeneratorWorker worker = new JetControlFlowInstructionsGeneratorWorker(scopingElement, subroutine);
+    private void pushBuilder(JetElement scopingElement) {
+        JetControlFlowInstructionsGeneratorWorker worker = new JetControlFlowInstructionsGeneratorWorker(scopingElement);
         builders.push(worker);
         builder = worker;
     }
 
-    private JetControlFlowInstructionsGeneratorWorker popBuilder(@NotNull JetElement element) {
+    private JetControlFlowInstructionsGeneratorWorker popBuilder() {
         JetControlFlowInstructionsGeneratorWorker worker = builders.pop();
         if (!builders.isEmpty()) {
             builder = builders.peek();
@@ -73,12 +73,7 @@ public class JetControlFlowInstructionsGenerator extends JetControlFlowBuilderAd
 
     @Override
     public void enterSubroutine(@NotNull JetElement subroutine) {
-        if (builder != null && subroutine instanceof JetFunctionLiteral) {
-            pushBuilder(subroutine, builder.getReturnSubroutine());
-        }
-        else {
-            pushBuilder(subroutine, subroutine);
-        }
+        pushBuilder(subroutine);
         assert builder != null;
         builder.enterLexicalScope(subroutine);
         builder.enterSubroutine(subroutine);
@@ -89,7 +84,7 @@ public class JetControlFlowInstructionsGenerator extends JetControlFlowBuilderAd
     public Pseudocode exitSubroutine(@NotNull JetElement subroutine) {
         super.exitSubroutine(subroutine);
         builder.exitLexicalScope(subroutine);
-        JetControlFlowInstructionsGeneratorWorker worker = popBuilder(subroutine);
+        JetControlFlowInstructionsGeneratorWorker worker = popBuilder();
         if (!builders.empty()) {
             JetControlFlowInstructionsGeneratorWorker builder = builders.peek();
             builder.declareFunction(subroutine, worker.getPseudocode());
@@ -102,7 +97,6 @@ public class JetControlFlowInstructionsGenerator extends JetControlFlowBuilderAd
         private final PseudocodeImpl pseudocode;
         private final Label error;
         private final Label sink;
-        private final JetElement returnSubroutine;
 
         private final PseudoValueFactory valueFactory = new PseudoValueFactoryImpl() {
             @NotNull
@@ -116,11 +110,10 @@ public class JetControlFlowInstructionsGenerator extends JetControlFlowBuilderAd
             }
         };
 
-        private JetControlFlowInstructionsGeneratorWorker(@NotNull JetElement scopingElement, @NotNull JetElement returnSubroutine) {
+        private JetControlFlowInstructionsGeneratorWorker(@NotNull JetElement scopingElement) {
             this.pseudocode = new PseudocodeImpl(scopingElement);
             this.error = pseudocode.createLabel("error", null);
             this.sink = pseudocode.createLabel("sink", null);
-            this.returnSubroutine = returnSubroutine;
         }
 
         public PseudocodeImpl getPseudocode() {
@@ -189,17 +182,6 @@ public class JetControlFlowInstructionsGenerator extends JetControlFlowBuilderAd
             allBlocks.push(blockInfo);
             bindLabel(blockInfo.getEntryPoint());
             add(new SubroutineEnterInstruction(subroutine, getCurrentScope()));
-        }
-
-        @NotNull
-        @Override
-        public JetElement getCurrentSubroutine() {
-            return pseudocode.getCorrespondingElement();
-        }
-
-        @Override
-        public JetElement getReturnSubroutine() {
-            return returnSubroutine;// subroutineInfo.empty() ? null : subroutineInfo.peek().getElement();
         }
 
         @NotNull

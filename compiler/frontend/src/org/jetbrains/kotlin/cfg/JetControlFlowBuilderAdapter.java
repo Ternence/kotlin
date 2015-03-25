@@ -227,18 +227,6 @@ public abstract class JetControlFlowBuilderAdapter implements JetControlFlowBuil
         return getDelegateBuilder().exitSubroutine(subroutine);
     }
 
-    @NotNull
-    @Override
-    public JetElement getCurrentSubroutine() {
-        return getDelegateBuilder().getCurrentSubroutine();
-    }
-
-    @Override
-    @Nullable
-    public JetElement getReturnSubroutine() {
-        return getDelegateBuilder().getReturnSubroutine();
-    }
-
     @Override
     public void returnValue(@NotNull JetExpression returnExpression, @NotNull PseudoValue returnValue, @NotNull JetElement subroutine) {
         getDelegateBuilder().returnValue(returnExpression, returnValue, subroutine);

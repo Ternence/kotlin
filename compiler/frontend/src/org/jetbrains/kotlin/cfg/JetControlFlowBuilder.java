@@ -38,11 +38,6 @@ public interface JetControlFlowBuilder {
     @NotNull
     Pseudocode exitSubroutine(@NotNull JetElement subroutine);
 
-    @NotNull
-    JetElement getCurrentSubroutine();
-    @Nullable
-    JetElement getReturnSubroutine();
-
     // Lexical scopes
     void enterLexicalScope(@NotNull JetElement element);
     void exitLexicalScope(@NotNull JetElement element);
