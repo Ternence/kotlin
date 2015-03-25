@@ -7,36 +7,16 @@ import java.util.regex.MatchResult
 import java.util.regex.Pattern
 import java.nio.charset.Charset
 
-/**
- * Returns the index within this string of the last occurrence of the specified substring.
- */
-private fun String.nativeLastIndexOf(str: String): Int = (this as java.lang.String).lastIndexOf(str)
-
-/**
- * Returns the index within this string of the last occurrence of the specified character.
- */
-private fun String.nativeLastIndexOf(ch: Char): Int = (this as java.lang.String).lastIndexOf(ch.toInt())
-
-/**
- * Returns the index within this string of the first occurrence of the specified substring.
- */
-private fun String.nativeIndexOf(str: String): Int = (this as java.lang.String).indexOf(str)
-
-/**
- * Returns the index within this string of the first occurrence of the specified substring, starting from the specified offset.
- */
-private fun String.nativeIndexOf(str: String, fromIndex: Int): Int = (this as java.lang.String).indexOf(str, fromIndex)
-
-
-/**
- * Returns the index within this string of the first occurrence of the specified character.
- */
-private fun String.nativeIndexOf(ch: Char): Int = (this as java.lang.String).indexOf(ch.toInt())
 
 /**
  * Returns the index within this string of the first occurrence of the specified character, starting from the specified offset.
  */
 private fun String.nativeIndexOf(ch: Char, fromIndex: Int): Int = (this as java.lang.String).indexOf(ch.toInt(), fromIndex)
+
+/**
+ * Returns the index within this string of the first occurrence of the specified substring, starting from the specified offset.
+ */
+private fun String.nativeIndexOf(str: String, fromIndex: Int): Int = (this as java.lang.String).indexOf(str, fromIndex)
 
 /**
  * Returns the index within this string of the last occurrence of the specified character.
@@ -52,7 +32,19 @@ private fun String.nativeLastIndexOf(str: String, fromIndex: Int): Int = (this a
 /**
  * Compares this string to another string, ignoring case considerations.
  */
-public fun String.equalsIgnoreCase(anotherString: String): Boolean = (this as java.lang.String).equalsIgnoreCase(anotherString)
+deprecated("Use equals(anotherString, ignoreCase = true) instead")
+public fun String.equalsIgnoreCase(anotherString: String): Boolean = equals(anotherString, ignoreCase = true)
+
+/**
+ * Returns `true` if this string is equal to [anotherString], optionally ignoring character case.
+ *
+ * @param ignoreCase `true` to ignore character case when comparing strings. By default `false`.
+ */
+public fun String.equals(anotherString: String, ignoreCase: Boolean = false): Boolean =
+    if (!ignoreCase)
+        (this as java.lang.String).equals(anotherString)
+    else
+        (this as java.lang.String).equalsIgnoreCase(anotherString)
 
 /**
  * Returns the hash code of this string.
@@ -122,32 +114,29 @@ public fun String.substring(beginIndex: Int, endIndex: Int): String = (this as j
 /**
  * Returns `true` if this string starts with the specified prefix.
  */
-public fun String.startsWith(prefix: String): Boolean = (this as java.lang.String).startsWith(prefix)
+public fun String.startsWith(prefix: String, ignoreCase: Boolean = false): Boolean =
+    if (!ignoreCase)
+        (this as java.lang.String).startsWith(prefix)
+    else
+        regionMatches(0, prefix, 0, prefix.length(), ignoreCase)
 
 /**
- * Returns `true` if a subsring of this string starting at the specified offset starts with the specified prefix.
+ * Returns `true` if a substring of this string starting at the specified offset [thisOffset] starts with the specified prefix.
  */
-public fun String.startsWith(prefix: String, toffset: Int): Boolean = (this as java.lang.String).startsWith(prefix, toffset)
-
-/**
- * Returns `true` if this string starts with the specified character.
- */
-public fun String.startsWith(ch: Char): Boolean = (this as java.lang.String).startsWith(ch.toString())
-
-/**
- * Returns `true` if this string contains the specified sequence of characters as a substring.
- */
-public fun String.contains(seq: CharSequence): Boolean = (this as java.lang.String).contains(seq)
+public fun String.startsWith(prefix: String, thisOffset: Int, ignoreCase: Boolean = false): Boolean =
+    if (!ignoreCase)
+        (this as java.lang.String).startsWith(prefix, thisOffset)
+    else
+        regionMatches(thisOffset, prefix, 0, prefix.length(), ignoreCase)
 
 /**
  * Returns `true` if this string ends with the specified suffix.
  */
-public fun String.endsWith(suffix: String): Boolean = (this as java.lang.String).endsWith(suffix)
-
-/**
- * Returns `true` if this string ends with the specified character.
- */
-public fun String.endsWith(ch: Char): Boolean = (this as java.lang.String).endsWith(ch.toString())
+public fun String.endsWith(suffix: String, ignoreCase: Boolean = false): Boolean =
+    if (!ignoreCase)
+        (this as java.lang.String).endsWith(suffix)
+    else
+        regionMatches(length() - suffix.length(), suffix, 0, suffix.length(), ignoreCase = true)
 
 // "constructors" for String
 

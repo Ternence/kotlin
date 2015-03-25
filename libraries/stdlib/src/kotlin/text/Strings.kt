@@ -465,137 +465,220 @@ public fun String.replaceBeforeLast(delimiter: String, replacement: String, miss
     return if (index == -1) missingDelimiterValue else replaceRange(0, index, replacement)
 }
 
+/**
+ * Returns `true` if this string starts with the specified character.
+ */
+public fun String.startsWith(char: Char, ignoreCase: Boolean = false): Boolean =
+        this.length() > 0 && this[0].equals(char, ignoreCase)
+
+/**
+ * Returns `true` if this string ends with the specified character.
+ */
+public fun String.endsWith(char: Char, ignoreCase: Boolean = false): Boolean =
+        this.length() > 0 && this[lastIndex].equals(char, ignoreCase)
+
 
 // indexOfAny()
 
 
-private fun String.indexOfAny(delimiters: CharArray, startIndex: Int, ignoreCase: Boolean, last: Boolean): Pair<Int, Char>? {
-    if (!ignoreCase && delimiters.size() == 1) {
-        val delimiter = delimiters.single()
-        val index = if (!last) nativeIndexOf(delimiter, startIndex) else nativeLastIndexOf(delimiter, startIndex)
-        return if (index < 0) null else index to delimiter
+private fun String.indexOfAny(chars: CharArray, startIndex: Int, ignoreCase: Boolean, last: Boolean): Pair<Int, Char>? {
+    if (!ignoreCase && chars.size() == 1) {
+        val char = chars.single()
+        val index = if (!last) nativeIndexOf(char, startIndex) else nativeLastIndexOf(char, startIndex)
+        return if (index < 0) null else index to char
     }
 
-    val delimitersToUse =
-        if (!ignoreCase) {
-            delimiters
-        } else {
-            val delimitersToUpper = CharArray(delimiters.size())
-            for (index in delimiters.indices) delimitersToUpper[index] = delimiters[index].toUpperCase()
-            delimitersToUpper
-        }
-
-    val indices = if (!last) startIndex..lastIndex else startIndex downTo 0
+    val indices = if (!last) Math.max(startIndex, 0)..lastIndex else Math.min(startIndex, lastIndex) downTo 0
     for (index in indices) {
-        val char = if (ignoreCase) this[index].toUpperCase() else this[index]
-
-        val matchingDelimiterIndex = delimitersToUse.indexOf(char)
-        if (matchingDelimiterIndex >= 0)
-            return index to delimiters[matchingDelimiterIndex]
+        val charAtIndex = get(index)
+        val matchingCharIndex = chars.indexOfFirst { it.equals(charAtIndex, ignoreCase) }
+        if (matchingCharIndex >= 0)
+            return index to chars[matchingCharIndex]
     }
 
     return null
 }
 
-public fun String.indexOfAny(delimiters: CharArray, startIndex: Int = 0, ignoreCase: Boolean = false): Pair<Int, Char>? =
-    indexOfAny(delimiters, startIndex, ignoreCase, last = false)
+/**
+ * Finds the first occurrence of any of the specified [chars] in this string, starting from the specified [startIndex] and
+ * optionally ignoring the case.
+ *
+ * @param ignoreCase `true` to ignore character case when matching a character. By default `false`.
+ * @returns A pair of an index of the first occurrence of matched character from [chars] and the character matched or `null` if none of [chars] are found.
+ *
+ */
+public fun String.indexOfAny(chars: CharArray, startIndex: Int = 0, ignoreCase: Boolean = false): Pair<Int, Char>? =
+    indexOfAny(chars, startIndex, ignoreCase, last = false)
 
-public fun String.lastIndexOfAny(delimiters: CharArray, startIndex: Int = lastIndex, ignoreCase: Boolean = false): Pair<Int, Char>? =
-    indexOfAny(delimiters, startIndex, ignoreCase, last = true)
+/**
+ * Finds the last occurrence of any of the specified [chars] in this string, starting from the specified [startIndex] and
+ * optionally ignoring the case.
+ *
+ * @param startIndex The index of character to start searching at. The search proceeds backward toward the beginning of the string.
+ * @param ignoreCase `true` to ignore character case when matching a character. By default `false`.
+ * @returns A pair of an index of the last occurrence of matched character from [chars] and the character matched or `null` if none of [chars] are found.
+ *
+ */
+public fun String.lastIndexOfAny(chars: CharArray, startIndex: Int = lastIndex, ignoreCase: Boolean = false): Pair<Int, Char>? =
+    indexOfAny(chars, startIndex, ignoreCase, last = true)
 
 
-//platformName("indexOfAnyString")
-private fun String.indexOfAny(delimiters: Collection<String>, startIndex: Int, ignoreCase: Boolean, last: Boolean): Pair<Int, String>? {
-    if (!ignoreCase && delimiters.size() == 1) {
-        val delimiter = delimiters.single()
-        val index = if (!last) nativeIndexOf(delimiter, startIndex) else nativeLastIndexOf(delimiter, startIndex)
-        return if (index < 0) null else index to delimiter
+
+private fun String.indexOfAny(strings: Collection<String>, startIndex: Int, ignoreCase: Boolean, last: Boolean): Pair<Int, String>? {
+    if (!ignoreCase && strings.size() == 1) {
+        val string = strings.single()
+        val index = if (!last) nativeIndexOf(string, startIndex) else nativeLastIndexOf(string, startIndex)
+        return if (index < 0) null else index to string
     }
 
-
-    val indices = if (!last) startIndex..lastIndex else startIndex downTo 0
+    val indices = if (!last) Math.max(startIndex, 0)..lastIndex else Math.min(startIndex, lastIndex) downTo 0
     for (index in indices) {
-        val matchingDelimiter = delimiters.firstOrNull { it.length () > 0 && it.regionMatches (0, this, index, it.length(), ignoreCase) }
-        if (matchingDelimiter != null)
-            return index to matchingDelimiter
+        val matchingString = strings.firstOrNull { it.regionMatches(0, this, index, it.length(), ignoreCase) }
+        if (matchingString != null)
+            return index to matchingString
     }
 
     return null
 }
 
+/**
+ * Finds the first occurrence of any of the specified [strings] in this string, starting from the specified [startIndex] and
+ * optionally ignoring the case.
+ *
+ * @param ignoreCase `true` to ignore character case when matching a string. By default `false`.
+ * @returns A pair of an index of the first occurrence of matched string from [stromgs] and the string matched or `null` if none of [strings] are found.
+ *
+ * To avoid ambiguous results when strings in [strings] have characters in common, this method proceeds from
+ * the beginning to the end of this string, and finds at each position the first element in [strings]
+ * that matches this string at that position.
+ */
+public fun String.indexOfAny(strings: Collection<String>, startIndex: Int = 0, ignoreCase: Boolean = false): Pair<Int, String>? =
+    indexOfAny(strings, startIndex, ignoreCase, last = false)
 
-public fun String.indexOfAny(delimiters: Collection<String>, startIndex: Int = 0, ignoreCase: Boolean = false): Pair<Int, String>? =
-    indexOfAny(delimiters, startIndex, ignoreCase, last = false)
-
-public fun String.lastIndexOfAny(delimiters: Collection<String>, startIndex: Int = lastIndex, ignoreCase: Boolean = false): Pair<Int, String>? =
-    indexOfAny(delimiters, startIndex, ignoreCase, last = true)
+/**
+ * Finds the last occurrence of any of the specified [strings] in this string, starting from the specified [startIndex] and
+ * optionally ignoring the case.
+ *
+ * @param startIndex The index of character to start searching at. The search proceeds backward toward the beginning of the string.
+ * @param ignoreCase `true` to ignore character case when matching a string. By default `false`.
+ * @returns A pair of an index of the last occurrence of matched string from [strings] and the string matched or `null` if none of [strings] are found.
+ *
+ * To avoid ambiguous results when strings in [strings] have characters in common, this method proceeds from
+ * the end toward the beginning of this string, and finds at each position the first element in [strings]
+ * that matches this string at that position.
+ */
+public fun String.lastIndexOfAny(strings: Collection<String>, startIndex: Int = lastIndex, ignoreCase: Boolean = false): Pair<Int, String>? =
+    indexOfAny(strings, startIndex, ignoreCase, last = true)
 
 
 // indexOf
 
-public fun String.indexOf(delimiter: Char, startIndex: Int = 0, ignoreCase: Boolean = false): Int {
+/**
+ * Returns the index within this string of the first occurrence of the specified character, starting from the specified [startIndex].
+ *
+ * @param ignoreCase `true` to ignore character case when matching a character. By default `false`.
+ * @returns An index of the first occurrence of [char] or -1 if none is found.
+ */
+public fun String.indexOf(char: Char, startIndex: Int = 0, ignoreCase: Boolean = false): Int {
     return if (ignoreCase) 
-        indexOfAny(charArray(delimiter), startIndex, ignoreCase)?.first ?: -1
+        indexOfAny(charArray(char), startIndex, ignoreCase)?.first ?: -1
     else
-        nativeIndexOf(delimiter, startIndex)
+        nativeIndexOf(char, startIndex)
 }
 
-public fun String.indexOf(delimiter: String, startIndex: Int = 0, ignoreCase: Boolean = false): Int {
+/**
+ * Returns the index within this string of the first occurrence of the specified [string], starting from the specified [startIndex].
+ *
+ * @param ignoreCase `true` to ignore character case when matching a string. By default `false`.
+ * @returns An index of the first occurrence of [string] or -1 if none is found.
+ */
+public fun String.indexOf(string: String, startIndex: Int = 0, ignoreCase: Boolean = false): Int {
     return if (ignoreCase)
-        indexOfAny(listOf(delimiter), startIndex, ignoreCase)?.first ?: -1
+        indexOfAny(listOf(string), startIndex, ignoreCase)?.first ?: -1
     else
-        nativeIndexOf(delimiter, startIndex)
+        nativeIndexOf(string, startIndex)
 }
 
-public fun String.lastIndexOf(delimiter: Char, startIndex: Int = lastIndex, ignoreCase: Boolean = false): Int {
+/**
+ * Returns the index within this string of the last occurrence of the specified character, starting from the specified [startIndex].
+ *
+ * @param startIndex The index of character to start searching at. The search proceeds backward toward the beginning of the string.
+ * @param ignoreCase `true` to ignore character case when matching a character. By default `false`.
+ * @returns An index of the first occurrence of [char] or -1 if none is found.
+ */
+public fun String.lastIndexOf(char: Char, startIndex: Int = lastIndex, ignoreCase: Boolean = false): Int {
     return if (ignoreCase)
-        lastIndexOfAny(charArray(delimiter), startIndex, ignoreCase)?.first ?: -1
+        lastIndexOfAny(charArray(char), startIndex, ignoreCase)?.first ?: -1
     else
-        nativeLastIndexOf(delimiter, startIndex)
+        nativeLastIndexOf(char, startIndex)
 }
 
-public fun String.lastIndexOf(delimiter: String, startIndex: Int = lastIndex, ignoreCase: Boolean = false): Int {
+/**
+ * Returns the index within this string of the last occurrence of the specified [string], starting from the specified [startIndex].
+ *
+ * @param startIndex The index of character to start searching at. The search proceeds backward toward the beginning of the string.
+ * @param ignoreCase `true` to ignore character case when matching a string. By default `false`.
+ * @returns An index of the first occurrence of [string] or -1 if none is found.
+ */
+public fun String.lastIndexOf(string: String, startIndex: Int = lastIndex, ignoreCase: Boolean = false): Int {
     return if (ignoreCase)
-        lastIndexOfAny(listOf(delimiter), startIndex, ignoreCase)?.first ?: -1
+        lastIndexOfAny(listOf(string), startIndex, ignoreCase)?.first ?: -1
     else
-        nativeLastIndexOf(delimiter, startIndex)
+        nativeLastIndexOf(string, startIndex)
 }
 
+/**
+ * Returns `true` if this string contains the specified sequence of characters as a substring.
+ *
+ * @param ignoreCase `true` to ignore character case when comparing strings. By default `false`.
+ */
+public fun String.contains(seq: CharSequence, ignoreCase: Boolean = false): Boolean =
+        indexOf(seq.toString(), ignoreCase = ignoreCase) >= 0
 
 
 // rangesDelimitedBy
 
+/**
+ * Returns a sequence of index ranges of substrings in this string around occurrences of the specified [delimiters].
+ *
+ * @param delimiters One or more characters to be used as delimiters.
+ * @param startIndex The index to start searching delimiters from.
+ *  No range having its start value less than [startIndex] is returned.
+ *  [startIndex] is coerced to be non-negative and not greater than length of this string.
+ * @param ignoreCase `true` to ignore character case when matching a delimiter. By default `false`.
+ * @param limit The maximum number of substrings to return. Zero by default means no limit is set.
+ */
 public fun String.rangesDelimitedBy(vararg delimiters: Char, startIndex: Int = 0, ignoreCase: Boolean = false, limit: Int = 0): Sequence<IntRange> {
-    require(limit >= 0, "limit must be non-negative")
+    require(limit >= 0, { "Limit must be non-negative, but was $limit" })
 
     return object : Sequence<IntRange> {
 
         override fun iterator(): Iterator<IntRange> = object : Iterator<IntRange> {
             var nextState: Int = -1 // -1 for unknown, 0 for done, 1 for continue
-            var startIndexValue: Int = startIndex
+            var currentStartIndex: Int = Math.min(Math.max(startIndex, 0), length())
             var nextItem: IntRange? = null
             var counter: Int = 0
 
             private fun calcNext() {
-                if (startIndexValue < 0) {
+                if (currentStartIndex < 0) {
                     nextState = 0
                     nextItem = null
                 }
                 else {
                     if (limit > 0 && ++counter >= limit) {
-                        nextItem = startIndexValue..this@rangesDelimitedBy.length()-1
-                        startIndexValue = -1
+                        nextItem = currentStartIndex..lastIndex
+                        currentStartIndex = -1
                     }
                     else {
-                        val match = indexOfAny(delimiters, startIndex = startIndexValue, ignoreCase = ignoreCase)
+                        val match = indexOfAny(delimiters, startIndex = currentStartIndex, ignoreCase = ignoreCase)
                         if (match == null) {
-                            nextItem = startIndexValue..this@rangesDelimitedBy.length()-1
-                            startIndexValue = -1
+                            nextItem = currentStartIndex..lastIndex
+                            currentStartIndex = -1
                         }
                         else {
                             val index = match.first
-                            nextItem = startIndexValue..index-1
-                            startIndexValue = index + 1
+                            nextItem = currentStartIndex..index-1
+                            currentStartIndex = index + 1
                         }
                     }
                     nextState = 1
@@ -623,48 +706,52 @@ public fun String.rangesDelimitedBy(vararg delimiters: Char, startIndex: Int = 0
     }
 }
 
+/**
+ * Returns a sequence of index ranges of substrings in this string around occurrences of the specified [delimiters].
+ *
+ * @param delimiters One or more strings to be used as delimiters.
+ * @param startIndex The index to start searching delimiters from.
+ *  No range having its start value less than [startIndex] is returned.
+ *  [startIndex] is coerced to be non-negative and not greater than length of this string.
+ * @param ignoreCase `true` to ignore character case when matching a delimiter. By default `false`.
+ * @param limit The maximum number of substrings to return. Zero by default means no limit is set.
+ *
+ * To avoid ambiguous results when strings in [delimiters] have characters in common, this method proceeds from
+ * the beginning to the end of this string, and finds at each position the first element in [delimiters]
+ * that matches this string at that position.
+ */
 public fun String.rangesDelimitedBy(vararg delimiters: String, startIndex: Int = 0, ignoreCase: Boolean = false, limit: Int = 0): Sequence<IntRange> {
-    require(limit >= 0, "limit must be non-negative")
-
-//    val match = indexOfAny(delimiters.asList(), startIndex = startIndex, ignoreCase = ignoreCase)
-//    if (limit == 0)
-//        return sequenceOf()
-//    if (match == null || limit == 1)
-//        return sequenceOf<IntRange>(startIndex..lastIndex)
-//    else {
-//        val (index, delimiter) = match
-//        return sequence(0..index - 1, { -> rangesDelimitedBy(*delimiters, startIndex = index + delimiter.length(), ignoreCase = ignoreCase, limit = limit?.let { it - 1 }) })
-//    }
+    require(limit >= 0, { "Limit must be non-negative, but was $limit" } )
+    val delimitersList = delimiters.asList()
 
     return object : Sequence<IntRange> {
-        val delimitersList = delimiters.asList()
 
         override fun iterator(): Iterator<IntRange> = object : Iterator<IntRange> {
             var nextState: Int = -1 // -1 for unknown, 0 for done, 1 for continue
-            var startIndexValue: Int = startIndex
+            var currentStartIndex: Int = Math.min(Math.max(startIndex, 0), length())
             var nextItem: IntRange? = null
             var counter: Int = 0
 
             private fun calcNext() {
-                if (startIndexValue < 0) {
+                if (currentStartIndex < 0) {
                     nextState = 0
                     nextItem = null
                 }
                 else {
                     if (limit > 0 && ++counter >= limit) {
-                        nextItem = startIndexValue..this@rangesDelimitedBy.length()-1
-                        startIndexValue = -1
+                        nextItem = currentStartIndex..lastIndex
+                        currentStartIndex = -1
                     }
                     else {
-                        val match = indexOfAny(delimitersList, startIndex = startIndexValue, ignoreCase = ignoreCase)
+                        val match = indexOfAny(delimitersList, startIndex = currentStartIndex, ignoreCase = ignoreCase)
                         if (match == null) {
-                            nextItem = startIndexValue..this@rangesDelimitedBy.length()-1
-                            startIndexValue = -1
+                            nextItem = currentStartIndex..lastIndex
+                            currentStartIndex = -1
                         }
                         else {
                             val (index, delimiter) = match
-                            nextItem = startIndexValue..index-1
-                            startIndexValue = index + delimiter.length()
+                            nextItem = currentStartIndex..index-1
+                            currentStartIndex = index + delimiter.length()
                         }
                     }
                     nextState = 1
@@ -693,50 +780,62 @@ public fun String.rangesDelimitedBy(vararg delimiters: String, startIndex: Int =
 }
 
 
+// split
 
-private fun <T> sequence(initialValue: T, nextSequence: () -> Sequence<T>): Sequence<T> {
-    throw UnsupportedOperationException()
-}
-
+/**
+ * Splits this string to a sequence of strings around occurrences of the specified [delimiters].
+ *
+ * @param delimiters One or more strings to be used as delimiters.
+ * @param ignoreCase `true` to ignore character case when matching a delimiter. By default `false`.
+ * @param limit The maximum number of substrings to return. Zero by default means no limit is set.
+ *
+ * To avoid ambiguous results when strings in [delimiters] have characters in common, this method proceeds from
+ * the beginning to the end of this string, and finds at each position the first element in [delimiters]
+ * that matches this string at that position.
+ */
 public fun String.splitToSequence(vararg delimiters: String, ignoreCase: Boolean = false, limit: Int = 0): Sequence<String> =
         rangesDelimitedBy(*delimiters, ignoreCase = ignoreCase, limit = limit) map { substring(it) }
 
+/**
+ * Splits this string to a list of strings around occurrences of the specified [delimiters].
+ *
+ * @param delimiters One or more strings to be used as delimiters.
+ * @param ignoreCase `true` to ignore character case when matching a delimiter. By default `false`.
+ * @param limit The maximum number of substrings to return. Zero by default means no limit is set.
+ *
+ * To avoid ambiguous results when strings in [delimiters] have characters in common, this method proceeds from
+ * the beginning to the end of this string, and matches at each position the first element in [delimiters]
+ * that is equal to a delimiter in this instance at that position.
+ */
 public fun String.split(vararg delimiters: String, ignoreCase: Boolean = false, limit: Int = 0): List<String> =
         splitToSequence(*delimiters, ignoreCase = ignoreCase, limit = limit).toList()
 
+/**
+ * Splits this string to a sequence of strings around occurrences of the specified [delimiters].
+ *
+ * @param delimiters One or more characters to be used as delimiters.
+ * @param ignoreCase `true` to ignore character case when matching a delimiter. By default `false`.
+ * @param limit The maximum number of substrings to return.
+ */
 public fun String.splitToSequence(vararg delimiters: Char, ignoreCase: Boolean = false, limit: Int = 0): Sequence<String> =
         rangesDelimitedBy(*delimiters, ignoreCase = ignoreCase, limit = limit) map { substring(it) }
 
+/**
+ * Splits this string to a list of strings around occurrences of the specified [delimiters].
+ *
+ * @param delimiters One or more characters to be used as delimiters.
+ * @param ignoreCase `true` to ignore character case when matching a delimiter. By default `false`.
+ * @param limit The maximum number of substrings to return.
+ */
 public fun String.split(vararg delimiters: Char, ignoreCase: Boolean = false, limit: Int = 0): List<String> =
         splitToSequence(*delimiters, ignoreCase = ignoreCase, limit = limit).toList()
 
-
+/**
+ * Splits this string to a sequence of lines delimited by any of the following character sequences: CRLF, LF or CR.
+ */
 public fun String.toLineSequence(): Sequence<String> = splitToSequence("\r\n", "\n", "\r")
 
+/**
+ * * Splits this string to a list of lines delimited by any of the following character sequences: CRLF, LF or CR.
+ */
 public fun String.toLines(): List<String> = toLineSequence().toList()
-
-//{
-//    if (separator == null)
-//        return splitToSequence(LineSeparator.CRLF.value, LineSeparator.LF.value, LineSeparator.CR.value)
-//    else
-//        return splitToSequence(separator.value)
-//}
-//
-//public enum class LineSeparator(val value: String) {
-//    LF : LineSeparator("\n")
-//    CR : LineSeparator("\r")
-//    CRLF : LineSeparator("\r\n")
-//
-//    companion object {
-//        public val DEFAULT: LineSeparator by Delegates.lazy { fromString(LINE_SEPARATOR) }
-//
-//        public fun fromString(separatorValue: String): LineSeparator {
-//            return when (separatorValue) {
-//                LF.value -> LF
-//                CR.value -> CR
-//                CRLF.value -> CRLF
-//                else -> throw IllegalArgumentException("LineSeparator value is not supported.") // TODO: show provided separatorValue to hex codes
-//            }
-//        }
-//    }
-//}

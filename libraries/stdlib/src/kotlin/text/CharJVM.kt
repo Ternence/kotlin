@@ -74,8 +74,31 @@ public fun Char.isUpperCase(): Boolean = Character.isUpperCase(this)
  */
 public fun Char.isLowerCase(): Boolean = Character.isLowerCase(this)
 
-
+/**
+ * Converts this character to uppercase.
+ */
 public fun Char.toUpperCase(): Char = Character.toUpperCase(this)
 
-
+/**
+ * Converts this character to lowercase.
+ */
 public fun Char.toLowerCase(): Char = Character.toLowerCase(this)
+
+/**
+ * Returns `true` if this character is equal to the [other] character, optionally ignoring character case.
+ *
+ * @param ignoreCase `true` to ignore character case when comparing characters. By default `false`.
+ *
+ * Two characters are considered the same ignoring case if at least one of the following is true:
+ *   - The two characters are the same (as compared by the == operator)
+ *   - Applying the method [toUpperCase] to each character produces the same result
+ *   - Applying the method [toLowerCase] to each character produces the same result
+ */
+public fun Char.equals(other: Char, ignoreCase: Boolean = false): Boolean {
+    if (this === other) return true
+    if (!ignoreCase) return false
+
+    if (this.toUpperCase() === other.toUpperCase()) return true
+    if (this.toLowerCase() === other.toLowerCase()) return true
+    return false
+}
