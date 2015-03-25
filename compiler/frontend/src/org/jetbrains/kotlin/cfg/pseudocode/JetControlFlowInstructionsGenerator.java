@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.cfg.pseudocode;
 
+import com.intellij.psi.util.PsiTreeUtil;
 import com.intellij.util.containers.Stack;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -219,7 +220,19 @@ public class JetControlFlowInstructionsGenerator extends JetControlFlowBuilderAd
         @Override
         public Label getExitPoint(@NotNull JetElement labelElement) {
             BreakableBlockInfo blockInfo = elementToBlockInfo.get(labelElement);
-            assert blockInfo != null : labelElement.getText();
+            if (blockInfo == null) {
+                JetElement currentSubroutine = pseudocode.getCorrespondingElement();
+                if (PsiTreeUtil.isAncestor(labelElement, currentSubroutine, true)) {
+                    JetControlFlowInstructionsGenerator generator = new JetControlFlowInstructionsGenerator();
+                    generator.enterSubroutine(labelElement);
+                    blockInfo = generator.elementToBlockInfo.get(labelElement);
+                    ((PseudocodeImpl)generator.exitSubroutine(labelElement)).postProcess();
+
+                    elementToBlockInfo.put(labelElement, blockInfo);
+                }
+                assert blockInfo != null : labelElement.getText();
+            }
+
             return blockInfo.getExitPoint();
         }
 
