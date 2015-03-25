@@ -17,13 +17,13 @@
 package org.jetbrains.kotlin.jps.build
 
 import com.intellij.util.Consumer
+import org.jetbrains.jps.builders.java.JavaModuleBuildTargetType
 import org.jetbrains.jps.incremental.ModuleBuildTarget
-import org.jetbrains.jps.model.java.JavaSourceRootProperties
-import org.jetbrains.jps.model.java.JavaSourceRootType
 import org.jetbrains.jps.model.java.JpsJavaModuleType
 import org.jetbrains.jps.model.library.JpsOrderRootType
 import org.jetbrains.jps.model.module.JpsModule
 import org.jetbrains.jps.util.JpsPathUtil
+import java.io.File
 import java.util.ArrayList
 
 class JpsJsModuleUtils private() {
@@ -50,13 +50,17 @@ class JpsJsModuleUtils private() {
                 override fun consume(module: JpsModule) {
                     if (module == target.getModule() || module.getModuleType() != JpsJavaModuleType.INSTANCE) return
 
-                    result.add("@" + module.getName())
-
-                    for (root in module.getSourceRoots<JavaSourceRootProperties>(JavaSourceRootType.SOURCE)) {
-                        result.add(JpsPathUtil.urlToPath(root.getUrl()))
-                    }
+                    val targetType = if (target.isTests()) JavaModuleBuildTargetType.TEST else JavaModuleBuildTargetType.PRODUCTION
+                    val moduleBuildTarget = ModuleBuildTarget(module, targetType)
+                    val outputDir = KotlinBuilderModuleScriptGenerator.getOutputDirSafe(moduleBuildTarget)
+                    val metaInfoFile = getOutputMetaFile(outputDir, module.getName())
+                    result.add(metaInfoFile.getAbsolutePath())
                 }
             })
         }
+
+        fun getOutputFile(outputDir: File, moduleName: String) = File(outputDir, "$moduleName.js")
+
+        fun getOutputMetaFile(outputDir: File, moduleName: String) = File(outputDir, "$moduleName.meta.js")
     }
 }
