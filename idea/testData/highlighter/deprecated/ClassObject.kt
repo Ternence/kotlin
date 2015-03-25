@@ -7,7 +7,6 @@ fun test() {
    MyTrait.<warning descr="'MyTrait.Companion' is deprecated. Use A instead">Companion</warning>
    <warning descr="'MyTrait.Companion' is deprecated. Use A instead">MyTrait</warning>
    MyClass.<warning descr="'MyClass.Companion' is deprecated. Use A instead">Companion</warning>
-   MyClass.<warning descr="'MyClass.Companion' is deprecated. Use A instead">Companion</warning>.test
 
    a == b
 }
