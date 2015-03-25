@@ -18,3 +18,6 @@ val View.includeTag: ft<View, View?>
 val View.fragmentTag: ft<View, View?>
     get() = findViewById(0) : View
 
+val View.`fun`: ft<TextView, TextView?>
+    get() = findViewById(0) as TextView
+
