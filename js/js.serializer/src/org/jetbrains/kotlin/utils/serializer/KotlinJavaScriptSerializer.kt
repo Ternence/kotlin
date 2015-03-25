@@ -16,6 +16,7 @@
 
 package org.jetbrains.kotlin.utils.serializer
 
+import com.intellij.openapi.util.io.FileUtil
 import org.jetbrains.kotlin.builtins.BuiltInsSerializationUtil
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptor
@@ -36,16 +37,20 @@ import java.io.File
 public class KotlinJavaScriptSerializer() {
 
     public fun serialize(moduleName: String, moduleDescriptor: ModuleDescriptor, metaFile: File) {
+        FileUtil.writeToFile(metaFile, serializeToString(moduleName, moduleDescriptor))
+    }
+
+    public fun serializeToString(moduleName: String, moduleDescriptor: ModuleDescriptor): String {
         val contentMap = hashMapOf<String, ByteArray>()
 
         DescriptorUtils.getPackagesFqNames(moduleDescriptor).forEach {
             fqName -> serializePackage(moduleDescriptor, fqName) {
-                (fileName, stream) -> contentMap[fileName] = stream.toByteArray()
-            }
+            (fileName, stream) -> contentMap[fileName] = stream.toByteArray()
+        }
         }
 
         val content = KotlinJavascriptSerializationUtil.contentMapToByteArray(contentMap)
-        KotlinJavascriptMetadataUtils.writeMetadata(moduleName, content, metaFile)
+        return KotlinJavascriptMetadataUtils.writeMetadataToString(moduleName, content)
     }
 
     fun serializePackage(module: ModuleDescriptor, fqName: FqName, writeFun: (String, ByteArrayOutputStream) -> Unit) {
